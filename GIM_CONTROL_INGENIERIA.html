@@ -316,6 +316,22 @@ tbody tr:last-child td{border-bottom:none}
           <tbody id="otms-body"></tbody>
         </table></div></div>
       </div>
+      <!-- HISTÓRICOS -->
+      <div class="page" id="page-historicos">
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+          <input id="hist-buscar" placeholder="Buscar OTM, PI, diseñador, producto..." 
+            style="background:var(--bg3);border:1.5px solid var(--line2);color:var(--t);font-family:var(--sans);font-size:13px;padding:8px 12px;border-radius:var(--r2);outline:none;width:320px"
+            oninput="renderHistoricos()">
+          <select id="hist-filtro" onchange="renderHistoricos()"
+            style="background:var(--bg3);border:1.5px solid var(--line2);color:var(--t);font-family:var(--sans);font-size:13px;padding:8px 12px;border-radius:var(--r2);outline:none">
+            <option value="">Todas las OTMs</option>
+            <option value="activas">Solo activas</option>
+            <option value="cerradas">Solo cerradas</option>
+            <option value="anuladas">Solo anuladas</option>
+          </select>
+        </div>
+        <div id="historicos-content"></div>
+      </div>
       <!-- COLA DEL DISEÑADOR (solo diseñadores) -->
       <div class="page" id="page-cola">
         <div id="cola-content"></div>
@@ -1158,6 +1174,7 @@ function iniciarApp(){
   if(esJefe()){
     nav+='<div class="nav-item" onclick="go(\'kanban\')"><span class="ni">▦</span> Tablero de flujo <span class="nb nb-err" id="nb-at" style="display:none">0</span></div>';
     nav+='<div class="nav-item" onclick="go(\'otms\')"><span class="ni">≡</span> Todas las OTMs</div>';
+    nav+='<div class="nav-item" onclick="go(\'historicos\')"><span class="ni">📋</span> Históricos</div>';
     nav+='<div class="nav-item" onclick="go(\'indicadores\')"><span class="ni">▲</span> Indicadores</div>';
     nav+='<div class="nav-item" onclick="go(\'orden\')"><span class="ni">⇅</span> Orden de trabajo</div>';
     nav+='<div class="nav-item" onclick="go(\'calendario\')"><span class="ni">◫</span> Calendario equipo</div>';
@@ -1187,7 +1204,7 @@ function iniciarApp(){
 // ════════════════════════════════════════════════════════
 // NAVEGACIÓN
 // ════════════════════════════════════════════════════════
-var PL={dashboard:'Tablero de flujo',kanban:'Tablero de flujo',informes:'Análisis de datos',otms:'Todas las OTMs',cola:'Mi cola de trabajo','mis-ind':'Mis indicadores',indicadores:'Indicadores del equipo',orden:'Orden de trabajo',calendario:'Calendario del equipo',equipo:'Gestionar equipo',config:'Configuración'};
+var PL={dashboard:'Tablero de flujo',kanban:'Tablero de flujo',informes:'Análisis de datos',otms:'Todas las OTMs',historicos:'Históricos',cola:'Mi cola de trabajo','mis-ind':'Mis indicadores',indicadores:'Indicadores del equipo',orden:'Orden de trabajo',calendario:'Calendario del equipo',equipo:'Gestionar equipo',config:'Configuración'};
 function go(id){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on');});
   document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('on');});
@@ -1197,6 +1214,7 @@ function go(id){
 
   if(id==='kanban')renderKanban();
   if(id==='otms')renderOTMs();
+  if(id==='historicos') renderHistoricos();
   if(id==='cola')renderCola();
   if(id==='mis-ind')renderMisInd();
   if(id==='indicadores')renderIndicadores();
@@ -2806,6 +2824,161 @@ function verInforme(tipo){
   document.getElementById('inf-preview').innerHTML=html;
   document.getElementById('inf-preview-card').style.display='block';
   document.getElementById('inf-preview-card').scrollIntoView({behavior:'smooth'});
+}
+
+// ════════════════════════════════════════════════════════
+// HISTÓRICOS
+// ════════════════════════════════════════════════════════
+function renderHistoricos(){
+  var d=getData();
+  var dis=d.disenadores||[];
+  var busq=(document.getElementById('hist-buscar')||{}).value||'';
+  var filtro=(document.getElementById('hist-filtro')||{}).value||'';
+
+  var lista=(d.otms||[]).filter(function(o){
+    if(filtro==='activas') return o.etapa!=='cerrada'&&!o.anulada;
+    if(filtro==='cerradas') return o.etapa==='cerrada'&&!o.anulada;
+    if(filtro==='anuladas') return o.anulada;
+    return true;
+  }).filter(function(o){
+    if(!busq)return true;
+    var di=dis.find(function(x){return x.id===o.disId;})||{nombre:''};
+    return (o.otm+o.pi+di.nombre+prodLabel(o)).toLowerCase().includes(busq.toLowerCase());
+  }).sort(function(a,b){
+    return new Date(b.inicio||0)-new Date(a.inicio||0);
+  });
+
+  if(!lista.length){
+    document.getElementById('historicos-content').innerHTML='<div class="empty">Sin OTMs que mostrar</div>';
+    return;
+  }
+
+  var html='';
+  lista.forEach(function(o){
+    var di=dis.find(function(x){return x.id===o.disId;})||{nombre:'Sin asignar'};
+    var tact=tiempoActivoOTM(o,d);
+    var tf1=tiempoF1(o,d);
+    var tf2=tiempoF2(o,d);
+    var tm=tiempoMuertoOTM(o,d);
+    var s=semaforo(o,d);
+
+    // Cabecera de la OTM
+    html+='<div class="card" style="margin-bottom:18px">'
+      +'<div class="card-head" style="cursor:pointer" onclick="toggleHistOTM('+o.id+')">'
+        +'<div style="display:flex;align-items:center;gap:12px;flex:1;flex-wrap:wrap">'
+          +'<span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--acc2)">'+(o.docTipo||'OTM')+' '+o.otm+'</span>'
+          +'<span style="font-size:12px;color:var(--t3)">PI '+o.pi+'</span>'
+          +(o.fase===1?'<span class="fase-1">F1</span>':'<span class="fase-2">F2</span>')
+          +'<span style="font-size:12px;color:var(--t2)">'+prodLabel(o)+'</span>'
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:10px">'
+          +semBadge(s)
+          +'<span style="font-size:11px;color:var(--t3);font-family:var(--mono)">▼</span>'
+        +'</div>'
+      +'</div>'
+
+      // Resumen de la OTM
+      +'<div style="padding:14px;border-bottom:1px solid var(--line)">'
+        +'<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px">'
+          +'<div><div style="font-size:10px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Diseñador</div><div style="font-size:12px;font-weight:600;color:#fff">'+di.nombre+'</div></div>'
+          +'<div><div style="font-size:10px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Etapa actual</div><div style="font-size:12px;font-weight:600;color:#fff;display:flex;align-items:center;gap:4px"><span class="e-dot" style="background:'+etColor(o.etapa)+'"></span>'+etLabel(o.etapa)+'</div></div>'
+          +'<div><div style="font-size:10px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">T. Activo Total</div><div style="font-size:14px;font-weight:700;font-family:var(--mono);color:var(--ok2)">'+tact+'h</div></div>'
+          +'<div><div style="font-size:10px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">F1 / F2</div><div style="font-size:13px;font-weight:700;font-family:var(--mono);color:var(--acc2)">'+tf1+'h / <span style="color:var(--elec2)">'+tf2+'h</span></div></div>'
+          +'<div><div style="font-size:10px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">T. Muerto</div><div style="font-size:14px;font-weight:700;font-family:var(--mono);color:'+(tm>0?'var(--purple2)':'var(--t3)')+'">'+tm+'h</div></div>'
+          +'<div><div style="font-size:10px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Revisiones</div><div style="font-size:13px;font-weight:700;font-family:var(--mono);color:var(--warn2)">'+(o.revJefe||0)+'J / '+(o.revCliente||0)+'C</div></div>'
+        +'</div>'
+        // Barra de progreso
+        +(o.horasEst>0?
+          '<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t3);margin-bottom:4px"><span>Progreso vs estimado</span><span style="font-family:var(--mono)">'+tact+'h / '+o.horasEst+'h estimadas</span></div>'
+          +'<div style="height:6px;background:var(--line);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+Math.min(100,Math.round(tact/(o.horasEst||1)*100))+'%;background:'+(tact>o.horasEst?'var(--err)':'var(--acc)')+';border-radius:3px"></div></div></div>'
+        :'')
+      +'</div>'
+
+      // Detalle del historial (colapsable)
+      +'<div id="hist-detail-'+o.id+'" style="display:none">'
+        +'<div style="padding:14px">'
+          +'<div style="font-size:11px;font-family:var(--mono);color:var(--t3);letter-spacing:1px;margin-bottom:10px">HISTORIAL DE MOVIMIENTOS</div>'
+          +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+            +'<thead><tr>'
+              +'<th style="padding:8px 10px;border-bottom:2px solid var(--line2);color:var(--t3);font-family:var(--mono);font-size:10px;text-align:left;background:var(--bg3)">FECHA / HORA</th>'
+              +'<th style="padding:8px 10px;border-bottom:2px solid var(--line2);color:var(--t3);font-family:var(--mono);font-size:10px;text-align:left;background:var(--bg3)">ETAPA</th>'
+              +'<th style="padding:8px 10px;border-bottom:2px solid var(--line2);color:var(--t3);font-family:var(--mono);font-size:10px;text-align:left;background:var(--bg3)">ACCIÓN</th>'
+              +'<th style="padding:8px 10px;border-bottom:2px solid var(--line2);color:var(--t3);font-family:var(--mono);font-size:10px;text-align:right;background:var(--bg3)">T. EN ETAPA</th>'
+              +'<th style="padding:8px 10px;border-bottom:2px solid var(--line2);color:var(--t3);font-family:var(--mono);font-size:10px;text-align:left;background:var(--bg3)">OBSERVACIÓN</th>'
+            +'</tr></thead><tbody>';
+
+    // Filas del historial
+    var hist=o.historial||[];
+    var cfg=d.jornada||{hLV:8.5};
+    hist.forEach(function(h,i){
+      var sig=hist[i+1];
+      var tEtapa=sig?horasHabilesEntre(h.fecha,sig.fecha,cfg,d.horasExtra||[]):null;
+      var esNoAct=ETAPAS_NO_ACTIVAS.indexOf(h.etapa)>=0;
+      var fechaFmt=h.fecha?h.fecha.slice(0,16).replace('T',' '):'—';
+      var accionLabels={
+        avanzar:'→ Avanzó etapa',entregar_ap:'→ Entregó al AP',
+        liberar_fab:'✓ Liberó para fabricación',cerrar:'✓ Cerró OTM',
+        devolver_rev:'↩ Devolvió (jefe)',devolver_cliente:'↩ Devolvió (cliente)',
+        tm_iniciar:'⏸ Inició tiempo muerto',tm_finalizar:'▶ Finalizó tiempo muerto',
+        iniciar_fab:'★ Inició Fase 2',entrega_parcial:'◈ Entrega parcial',
+        chequeo:'✓ Lista de chequeo',asignar_dis:'👤 Asignó diseñador',
+        anular:'✕ Anuló OTM'
+      };
+      var accionLabel=accionLabels[h.accion]||h.accion||'—';
+      html+='<tr style="background:'+(esNoAct?'rgba(255,255,255,.02)':'rgba(14,165,233,.03)')+'">'
+        +'<td style="padding:8px 10px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;white-space:nowrap;color:var(--t2)">'+fechaFmt+'</td>'
+        +'<td style="padding:8px 10px;border-bottom:1px solid var(--line)">'
+          +'<span style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:'+(esNoAct?'var(--t3)':'#fff')+'">'
+            +'<span class="e-dot" style="background:'+etColor(h.etapa)+'"></span>'
+            +etLabel(h.etapa)
+          +'</span>'
+        +'</td>'
+        +'<td style="padding:8px 10px;border-bottom:1px solid var(--line);font-size:12px;color:var(--t2)">'+accionLabel+'</td>'
+        +'<td style="padding:8px 10px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;text-align:right;color:'+(esNoAct?'var(--t3)':h.activo?'var(--ok2)':'var(--t3)')+'">'
+          +(tEtapa!==null?(esNoAct?'('+tEtapa+'h)':tEtapa+'h activas'):'actual')
+        +'</td>'
+        +'<td style="padding:8px 10px;border-bottom:1px solid var(--line);font-size:11px;color:var(--t3);max-width:200px;overflow:hidden;text-overflow:ellipsis">'+(h.obs||'—')+'</td>'
+      +'</tr>';
+    });
+
+    // Tiempos muertos
+    if(o.tiemposMuertos&&o.tiemposMuertos.length){
+      html+='<tr><td colspan="5" style="padding:8px 10px;background:var(--bg3);color:var(--t3);font-size:10px;font-family:var(--mono);letter-spacing:1px;border-bottom:1px solid var(--line)">TIEMPOS MUERTOS</td></tr>';
+      o.tiemposMuertos.forEach(function(tm2){
+        var dur=tm2.inicio&&tm2.fin?horasHabilesEntre(tm2.inicio,tm2.fin,cfg,d.horasExtra||[]):null;
+        html+='<tr style="background:var(--purple3)">'
+          +'<td style="padding:7px 10px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--purple2)">'+(tm2.inicio?tm2.inicio.slice(0,16).replace('T',' '):'—')+'</td>'
+          +'<td colspan="2" style="padding:7px 10px;border-bottom:1px solid var(--line);font-size:12px;color:var(--purple2)">⏸ '+tm2.causa+'</td>'
+          +'<td style="padding:7px 10px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;text-align:right;color:var(--purple2)">'+(dur!==null?dur+'h':'activo')+'</td>'
+          +'<td style="padding:7px 10px;border-bottom:1px solid var(--line);font-size:11px;color:var(--t3)">'+(tm2.fin?'Finalizó: '+tm2.fin.slice(0,16).replace('T',' '):'En curso')+'</td>'
+        +'</tr>';
+      });
+    }
+
+    // Horas extra
+    var hextOTM=(d.horasExtra||[]).filter(function(h2){return h2.otmId===o.id;});
+    if(hextOTM.length){
+      html+='<tr><td colspan="5" style="padding:8px 10px;background:var(--bg3);color:var(--t3);font-size:10px;font-family:var(--mono);letter-spacing:1px;border-bottom:1px solid var(--line)">HORAS EXTRA</td></tr>';
+      hextOTM.forEach(function(he){
+        html+='<tr style="background:var(--ok3)">'
+          +'<td style="padding:7px 10px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--ok2)">'+he.fecha+'</td>'
+          +'<td colspan="2" style="padding:7px 10px;border-bottom:1px solid var(--line);font-size:12px;color:var(--ok2)">⚡ Horas extra</td>'
+          +'<td style="padding:7px 10px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;text-align:right;color:var(--ok2)">+'+he.horas+'h</td>'
+          +'<td style="padding:7px 10px;border-bottom:1px solid var(--line);font-size:11px;color:var(--t3)">'+(he.obs||'—')+'</td>'
+        +'</tr>';
+      });
+    }
+
+    html+='</tbody></table></div></div></div></div>';
+  });
+
+  document.getElementById('historicos-content').innerHTML=html;
+}
+
+function toggleHistOTM(id){
+  var el=document.getElementById('hist-detail-'+id);
+  if(!el)return;
+  el.style.display=el.style.display==='none'?'block':'none';
 }
 
 function cerrarModal(){document.querySelectorAll('.modal-bg').forEach(function(m){m.classList.remove('on');});}
