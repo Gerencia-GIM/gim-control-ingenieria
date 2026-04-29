@@ -65,6 +65,9 @@
   --purple:#7c3aed;
   --purple2:#c4b5fd;
   --purple3:rgba(124,58,237,.15);
+  --apoyo:#0e7a7a;
+  --apoyo2:#2dd4bf;
+  --apoyo3:rgba(14,122,122,.15);
 
   --r:14px;--r2:10px;--r3:6px;
   --mono:'DM Mono',monospace;--sans:'DM Sans','Segoe UI',system-ui,sans-serif;
@@ -140,6 +143,8 @@ html,body{height:100%;background:var(--bg-solid);color:var(--t);font-family:var(
 .btn-err{background:var(--err3);border-color:var(--err);color:var(--err2)}.btn-err:hover{background:var(--err);color:#fff}
 .btn-warn{background:var(--warn3);border-color:var(--warn);color:var(--warn2)}.btn-warn:hover{background:var(--warn);color:#000}
 .btn-purple{background:var(--purple3);border-color:var(--purple);color:var(--purple2)}
+.btn-apoyo{background:var(--apoyo3);border-color:var(--apoyo);color:var(--apoyo2)}
+.a-apoyo{background:var(--apoyo3);border-color:var(--apoyo);color:var(--apoyo2)}
 .btn-sm{padding:5px 12px;font-size:12px}
 
 /* ── LAYOUT ── */
@@ -679,6 +684,27 @@ select option{background:#0d1e3d;color:var(--t)}
             <th>Fecha</th><th>Descripción</th><th></th>
           </tr></thead><tbody id="dias-nl-body"></tbody></table></div>
         </div>
+        <!-- BACKUP -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-head">
+            <span class="card-title">// RESPALDO DE DATOS</span>
+          </div>
+          <div style="padding:16px">
+            <div style="font-size:12px;color:var(--t2);margin-bottom:16px">
+              Exporte un respaldo completo de todos los datos antes de actualizar el archivo. Puede importarlo después para restaurar todo exactamente como estaba.
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-acc" onclick="exportarBackup()">
+                ↓ Exportar respaldo JSON
+              </button>
+              <label class="btn btn-ghost" style="cursor:pointer">
+                ↑ Importar respaldo JSON
+                <input type="file" accept=".json" style="display:none" onchange="importarBackup(this)">
+              </label>
+            </div>
+            <div id="backup-status" style="margin-top:12px;font-size:11px;font-family:var(--mono);color:var(--t3)"></div>
+          </div>
+        </div>
         <div class="card"><div class="card-head"><span class="card-title">// HORAS EXTRA REGISTRADAS</span><button class="btn btn-acc btn-sm" onclick="abrirHorasExtra()">+ Registrar horas extra</button></div>
           <div class="tw"><table><thead><tr><th>Fecha</th><th>Diseñador</th><th>OTM / PI</th><th>Horas extra</th><th>Motivo</th><th></th></tr></thead><tbody id="hext-body"></tbody></table></div>
         </div>
@@ -800,6 +826,54 @@ select option{background:#0d1e3d;color:var(--t)}
       <div class="fg"><label>F. Compromiso Producción</label><input type="date" id="f-fprod"></div>
     </div>
     <div class="fg"><label>Observaciones técnicas de entrada</label><textarea id="f-obs" placeholder="Información técnica, aclaraciones, referencias de oferta..."></textarea></div>
+    <!-- ENTREGABLE DOCUMENTAL -->
+    <div style="border-top:1px solid var(--line2);margin-top:16px;padding-top:14px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:700;color:var(--apoyo2)">
+          <input type="checkbox" id="f-doc-activo" onchange="toggleDocumental()" style="width:16px;height:16px;accent-color:var(--apoyo)">
+          ◈ Esta OTM incluye entregable documental
+        </label>
+      </div>
+      <div id="f-doc-bloque" style="display:none;background:var(--apoyo3);border:1px solid var(--apoyo);border-radius:var(--r2);padding:14px">
+        <div class="fr2">
+          <div class="fg">
+            <label>Tipo de documento</label>
+            <select id="f-doc-tipo">
+              <option value="">— Seleccionar —</option>
+              <option value="mem_est">Memoria de cálculo estructural</option>
+              <option value="mem_ter">Memoria de cálculo térmico</option>
+              <option value="man_mto">Manual de mantenimiento</option>
+              <option value="man_ens">Manual de ensamble</option>
+              <option value="man_ope">Manual de operación</option>
+              <option value="man_iza">Manual de izaje</option>
+              <option value="man_alm">Manual de almacenamiento</option>
+              <option value="otro">Otro (especificar)</option>
+            </select>
+          </div>
+          <div class="fg" id="f-doc-otro-bloque" style="display:none">
+            <label>Especificar tipo</label>
+            <input type="text" id="f-doc-otro" placeholder="Ej: Informe técnico, Protocolo...">
+          </div>
+        </div>
+        <div class="fr2">
+          <div class="fg">
+            <label>Responsable del documento</label>
+            <select id="f-doc-dis"></select>
+          </div>
+          <div class="fg">
+            <label>¿Cuándo se elabora?</label>
+            <select id="f-doc-momento">
+              <option value="paralelo">En paralelo al diseño</option>
+              <option value="posterior">Después del diseño</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg">
+          <label>Observación (opcional)</label>
+          <input type="text" id="f-doc-obs" placeholder="Alcance, cliente, referencia...">
+        </div>
+      </div>
+    </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button><button class="btn btn-acc" onclick="guardarOTM()">Registrar OTM/OTE</button></div>
   </div>
 </div>
@@ -917,6 +991,61 @@ select option{background:#0d1e3d;color:var(--t)}
     </div>
   </div>
 </div>
+<!-- MODAL GESTIONAR DOCUMENTAL -->
+<div class="modal-bg" id="m-doc">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-title" style="color:var(--apoyo2)">// ENTREGABLE DOCUMENTAL</div>
+    <input type="hidden" id="doc-otm-id">
+    <div id="doc-otm-label" style="font-size:13px;color:var(--t2);margin-bottom:12px"></div>
+    <div id="doc-info" style="background:var(--apoyo3);border:1px solid var(--apoyo);border-radius:var(--r2);padding:12px;margin-bottom:14px;font-size:12px"></div>
+    <!-- Etapa actual y acción -->
+    <div class="fg"><label>Acción</label>
+      <select id="doc-accion">
+        <option value="entregar">Diseñador entrega al jefe</option>
+        <option value="aprobar">Jefe aprueba — liberar al AP</option>
+        <option value="devolver">Jefe devuelve — requiere correcciones</option>
+        <option value="cerrar">Cerrar entregable</option>
+      </select>
+    </div>
+    <div class="fg"><label>Fecha/hora</label>
+      <input type="datetime-local" id="doc-fecha">
+      <div id="doc-aviso-fecha" style="margin-top:5px;font-size:11px;color:var(--t3);font-family:var(--mono)">
+        <span style="color:var(--warn2)">⚠</span> Sin fecha — se tomará el momento actual
+      </div>
+    </div>
+    <div class="fg"><label>Observación</label>
+      <textarea id="doc-obs" rows="2" placeholder="Comentarios del jefe, motivo de devolución..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-apoyo" onclick="guardarAccionDoc()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ACTIVIDAD DE APOYO -->
+<div class="modal-bg" id="m-actividad">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title" style="color:var(--apoyo2)">// ACTIVIDAD DE APOYO</div>
+    <input type="hidden" id="act-edit-id">
+    <div class="fr2">
+      <div class="fg"><label>Descripción</label><input type="text" id="act-desc" placeholder="Ej: Manual de producto X, Capacitación, Informe..."></div>
+      <div class="fg"><label>Diseñador asignado</label>
+        <select id="act-dis"></select>
+      </div>
+    </div>
+    <div class="fr2">
+      <div class="fg"><label>Fecha inicio</label><input type="datetime-local" id="act-inicio"></div>
+      <div class="fg"><label>Horas estimadas</label><input type="number" id="act-horas-est" min="0.5" max="200" step="0.5" value="8" placeholder="h"></div>
+    </div>
+    <div class="fg"><label>Observación (opcional)</label><textarea id="act-obs" rows="2" placeholder="Contexto, motivo, cliente..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-apoyo" onclick="guardarActividad()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL JEFE -->
 <div class="modal-bg" id="m-jefe">
   <div class="modal" style="max-width:400px">
@@ -1185,7 +1314,7 @@ function getTiemposProducto(producto){
 // ESTADO GLOBAL
 // ════════════════════════════════════════════════════════
 var DISC = null, SK = null, ROL = null, DIS_ACTIVO = null, OTM_EDIT = null, OTM_CHQ = null, OTM_F = '';
-var GIM_API = 'https://script.google.com/macros/s/AKfycbxDqRYQhdXdcUCs0RF-pihNXnO91_f6g-YWZTQvjckCGZrkRcA8KlQGQM9JwOqDPbQqbQ/exec';
+var GIM_API = 'https://script.google.com/macros/s/AKfycbwhediALqxO1ZkIgyZq2J75nDTXxAzK4BSdBmGJIdhR0MylsWFz-ohQWesjrQPNEFsM/exec';
 var SYNC_EN_CURSO = false;
 var CLAVES_JEFE = {'MECANICO':'1111','ELECTRICO':'2222'};
 var DISC_SK = {MECANICO:'gim_ing_mec_v5',ELECTRICO:'gim_ing_elec_v5'};
@@ -1193,7 +1322,7 @@ var DIS_MEC = [{id:1,nombre:'CARLOS MORENO',rol:'disenador'},{id:2,nombre:'JHON 
 var DIS_ELEC = [{id:11,nombre:'RICARDO PEÑA',rol:'disenador'},{id:12,nombre:'MARCELA SUÁREZ',rol:'disenador'},{id:13,nombre:'HERNÁN DÍAZ',rol:'disenador'},{id:14,nombre:'NATALIA GÓMEZ',rol:'disenador'},{id:15,nombre:'PAOLA HERRERA',rol:'disenador'},{id:16,nombre:'IVÁN SALCEDO',rol:'disenador'},{id:17,nombre:'CRISTINA ÁVILA',rol:'disenador'},{id:18,nombre:'MAURICIO LEÓN',rol:'disenador'},{id:19,nombre:'CAMILO REYES',rol:'jefe_disenador'},{id:20,nombre:'ANA QUINTERO',rol:'disenador'}];
 var CFG_JORNADA_DEF = {hLV:8.5,sabados:true,nSab:2,hSab:4};
 
-function defData(disc){return{disenadores:disc==='MECANICO'?JSON.parse(JSON.stringify(DIS_MEC)):JSON.parse(JSON.stringify(DIS_ELEC)),jefes:[],otms:[],horasExtra:[],nextId:1,nextDisId:disc==='MECANICO'?100:200,tiempos:Object.assign({},TIEMPOS_DEF),jornada:Object.assign({},CFG_JORNADA_DEF)};}
+function defData(disc){return{disenadores:disc==='MECANICO'?JSON.parse(JSON.stringify(DIS_MEC)):JSON.parse(JSON.stringify(DIS_ELEC)),jefes:[],otms:[],actividades:[],nextActId:1,horasExtra:[],nextId:1,nextDisId:disc==='MECANICO'?100:200,tiempos:Object.assign({},TIEMPOS_DEF),jornada:Object.assign({},CFG_JORNADA_DEF)};}
 function getData(){
   var r=localStorage.getItem(SK);
   if(r){try{
@@ -1591,6 +1720,7 @@ function iniciarApp(){
     nav+='<div class="nav-item" onclick="go(\'indicadores\')"><span class="ni">▲</span> Indicadores</div>';
     nav+='<div class="nav-item" onclick="go(\'orden\')"><span class="ni">⇅</span> Orden de trabajo</div>';
     nav+='<div class="nav-item" onclick="go(\'calendario\')"><span class="ni">◫</span> Calendario equipo</div>';
+    nav+='<div class="nav-item" onclick="go(\'actividades\')"><span class="ni" style="color:var(--apoyo2)">◈</span> Actividades de Apoyo <span class="nb" id="nb-act" style="display:none;background:var(--apoyo)">0</span></div>';
     nav+='<div class="sb-sec">Admin</div>';
     nav+='<div class="nav-item" onclick="go(\'equipo\')"><span class="ni">⊞</span> Equipo</div>';
     nav+='<div class="nav-item" onclick="go(\'informes\')"><span class="ni">↓</span> Informes</div>';
@@ -1619,7 +1749,7 @@ function iniciarApp(){
 // ════════════════════════════════════════════════════════
 // NAVEGACIÓN
 // ════════════════════════════════════════════════════════
-var PL={dashboard:'Tablero de flujo',kanban:'Tablero de flujo',informes:'Análisis de datos',otms:'Todas las OTMs',historicos:'Históricos',cola:'Mi cola de trabajo','mis-ind':'Mis indicadores',indicadores:'Indicadores del equipo',orden:'Orden de trabajo',calendario:'Calendario del equipo',equipo:'Gestionar equipo',config:'Configuración'};
+var PL={dashboard:'Tablero de flujo',kanban:'Tablero de flujo',informes:'Análisis de datos',otms:'Todas las OTMs',historicos:'Históricos',cola:'Mi cola de trabajo','mis-ind':'Mis indicadores',indicadores:'Indicadores del equipo',orden:'Orden de trabajo',calendario:'Calendario del equipo',actividades:'Actividades de Apoyo',equipo:'Gestionar equipo',config:'Configuración'};
 function go(id){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on');});
   document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('on');});
@@ -1635,6 +1765,7 @@ function go(id){
   if(id==='indicadores')renderIndicadores();
   if(id==='orden') renderOrden();
   if(id==='calendario') renderCalendario();
+  if(id==='actividades') renderActividades();
   if(id==='informes') renderInformes();
   if(id==='equipo')renderEquipo();
   if(id==='config')renderConfig();
@@ -1724,7 +1855,7 @@ function renderKanban(){
       var prodDisplay=o.producto?(o.producto.replace(/__/g,' · ').replace(/_/g,' ')).toUpperCase():'';
       var tieneEP=(o.entregasParciales||[]).length>0;
       var epBadge=tieneEP?'<span style="background:var(--purple3);color:var(--purple2);border:1px solid var(--purple);border-radius:3px;font-size:9px;font-family:var(--mono);padding:1px 5px;font-weight:700">EP '+o.entregasParciales.length+'</span>':'';
-      html+='<div class="kan-card '+cc+'"><div class="kc-pi"><span>'+(o.docTipo||'OTM')+' PI '+o.pi+'</span>'+epBadge+'</div><div style="font-size:9px;color:var(--t3);font-family:var(--mono);margin-bottom:2px">'+prodDisplay+'</div><div class="kc-otm" onclick="abrirEtapa('+o.id+')" style="cursor:pointer">'+o.otm+'</div><div class="kc-dis">'+(di?di.nombre:'—')+'</div><div class="kc-footer"><span class="kc-dias" style="color:'+dc+'">'+dias.toFixed(1)+'d'+(tm2>0?'/'+tm2+'d':'')+'</span><span style="font-size:10px;color:var(--t3)">'+o.tipo.split(' ').slice(0,2).join(' ')+'</span></div>'+(o.tmActivo?'<div class="kc-tm-banner">⏸ '+o.tmCausa+'</div>':'')+(o.revisiones>0?'<div style="font-size:9px;color:var(--warn2);margin-top:3px;font-family:var(--mono)">'+o.revisiones+' revisión(es)</div>':'')+'<div style="display:flex;gap:4px;margin-top:6px"><button class="btn btn-ghost btn-sm" style="flex:1;font-size:10px" onclick="abrirEtapa('+o.id+')">→ Gestionar</button><button class="btn btn-warn btn-sm" style="font-size:10px;padding:4px 8px" onclick="editarOTM('+o.id+')" title="Editar datos">✎</button><button class="btn btn-err btn-sm" style="font-size:10px;padding:4px 8px" onclick="eliminarOTM('+o.id+')" title="Eliminar">✕</button></div></div>';
+      html+='<div class="kan-card '+cc+'"><div class="kc-pi"><span>'+(o.docTipo||'OTM')+' PI '+o.pi+'</span>'+epBadge+'</div><div style="font-size:9px;color:var(--t3);font-family:var(--mono);margin-bottom:2px">'+prodDisplay+'</div><div class="kc-otm" onclick="abrirEtapa('+o.id+')" style="cursor:pointer">'+o.otm+'</div><div class="kc-dis">'+(di?di.nombre:'—')+'</div><div class="kc-footer"><span class="kc-dias" style="color:'+dc+'">'+dias.toFixed(1)+'d'+(tm2>0?'/'+tm2+'d':'')+'</span><span style="font-size:10px;color:var(--t3)">'+o.tipo.split(' ').slice(0,2).join(' ')+'</span></div>'+(o.tmActivo?'<div class="kc-tm-banner">⏸ '+o.tmCausa+'</div>':'')+(o.revisiones>0?'<div style="font-size:9px;color:var(--warn2);margin-top:3px;font-family:var(--mono)">'+o.revisiones+' revisión(es)</div>':'')+(o.doc?'<div style="font-size:9px;color:var(--apoyo2);margin-top:3px;font-family:var(--mono);cursor:pointer" onclick="event.stopPropagation();cargarDocEnModal('+o.id+')">◈ Doc: '+(DOC_ETAPAS[o.doc.etapa]||o.doc.etapa)+'</div>':'')+'<div style="display:flex;gap:4px;margin-top:6px"><button class="btn btn-ghost btn-sm" style="flex:1;font-size:10px" onclick="abrirEtapa('+o.id+')">→ Gestionar</button><button class="btn btn-warn btn-sm" style="font-size:10px;padding:4px 8px" onclick="editarOTM('+o.id+')" title="Editar datos">✎</button><button class="btn btn-err btn-sm" style="font-size:10px;padding:4px 8px" onclick="eliminarOTM('+o.id+')" title="Eliminar">✕</button></div></div>';
     });
     html+='</div></div>';
   });
@@ -2256,6 +2387,13 @@ function guardarOTM(){
     fCompRev:document.getElementById('f-frev').value,
     fCompProd:document.getElementById('f-fprod').value,
     obs:document.getElementById('f-obs').value,
+    doc:(function(){
+      var chk=document.getElementById('f-doc-activo');
+      if(!chk||!chk.checked)return null;
+      var tp=document.getElementById('f-doc-tipo').value;
+      var ddis=document.getElementById('f-doc-dis').value;
+      return {tipo:tp,tipoOtro:tp==='otro'?(document.getElementById('f-doc-otro').value.trim()||''):'',disId:ddis?parseInt(ddis):0,momento:document.getElementById('f-doc-momento').value,obs:document.getElementById('f-doc-obs').value.trim(),etapa:'pendiente',historial:[]};
+    })(),
     etapa:etapaInicial,etapaFecha:inicio,
     historial:[{etapa:etapaInicial,fecha:inicio,obs:(docTipo)+' registrada',activo:false}],
     revisiones:0,revJefe:0,revCliente:0,
@@ -2275,6 +2413,9 @@ function guardarOTM(){
       d.otms[idx]=ex;
     }
     document.getElementById('m-otm').dataset.editId='';
+  // Reset documental
+  var docChk=document.getElementById('f-doc-activo');
+  if(docChk){docChk.checked=false;document.getElementById('f-doc-bloque').style.display='none';}
   } else {
     d.otms.push(nueva);d.nextId++;
   }
@@ -3107,10 +3248,13 @@ function renderCalendario(){
         if(!trabSab) return; // Este diseñador no trabaja este sábado — no aparece
       }
       var fl=fechaLibre[di.id];
-      if(fl&&fl>fecha) ocupados.push(di.id);
-      else if(!fl||(fl&&fl<=fecha)) disponibles.push(di.id);
+      var ocpOTM=fl&&fl>fecha;
+      var ocpAct=!!(d.actividades||[]).find(function(a){return a.disId===di.id&&a.etapa!=='cerrada'&&a.inicio.slice(0,10)<=fecha&&(!a.fin||a.fin.slice(0,10)>fecha);});
+      if(ocpOTM||ocpAct) ocupados.push(di.id);
+      else disponibles.push(di.id);
     });
-    cargaPorDia[fecha]={esLab:esLab,esSab:esSab2,ocupados:ocupados,disponibles:disponibles};
+    var nActsDia=(d.actividades||[]).filter(function(a){return a.etapa!=='cerrada'&&a.inicio.slice(0,10)<=fecha&&(!a.fin||a.fin.slice(0,10)>fecha);}).length;
+    cargaPorDia[fecha]={esLab:esLab,esSab:esSab2,ocupados:ocupados,disponibles:disponibles,nActs:nActsDia};
   }
 
   // Render cabecera
@@ -3168,6 +3312,9 @@ function renderCalendario(){
         if(nDisp>0){
           html+='<div style="font-size:9px;color:var(--ok2);margin-top:2px">'+nDisp+' dispon.</div>';
         }
+        if(info.nActs>0){
+          html+='<div style="font-size:9px;color:var(--apoyo2);margin-top:1px">◈ '+info.nActs+' apoyo</div>';
+        }
       } else {
         html+='<div style="font-size:9px;color:var(--t3)">No hábil</div>';
       }
@@ -3194,8 +3341,317 @@ function renderCalendario(){
 
 
 // ════════════════════════════════════════════════════════
+// ACTIVIDADES DE APOYO
+// ════════════════════════════════════════════════════════
+function renderActividades(){
+  var d=getData();
+  var acts=d.actividades||[];
+  var dis=d.disenadores||[];
+  var esJ=ROL==='jefe';
+  var h='<div class="card" style="margin-bottom:16px">';
+  h+='<div class="card-head"><span class="card-title">// ACTIVIDADES DE APOYO</span>';
+  if(esJ) h+='<button class="btn btn-apoyo btn-sm" onclick="abrirModalActividad()">+ Nueva actividad</button>';
+  h+='</div>';
+
+  // Filtros
+  h+='<div style="display:flex;gap:10px;padding:12px 16px;flex-wrap:wrap">';
+  h+='<select id="act-f-dis" onchange="renderActividades()" style="background:var(--bg3);border:1.5px solid var(--line2);color:var(--t);font-size:12px;padding:6px 10px;border-radius:var(--r2)">';
+  h+='<option value="">Todos los diseñadores</option>';
+  dis.forEach(function(di){h+='<option value="'+di.id+'">'+di.nombre+'</option>';});
+  h+='</select>';
+  h+='<select id="act-f-est" onchange="renderActividades()" style="background:var(--bg3);border:1.5px solid var(--line2);color:var(--t);font-size:12px;padding:6px 10px;border-radius:var(--r2)">';
+  h+='<option value="">Todas</option><option value="activa">Activas</option><option value="cerrada">Cerradas</option>';
+  h+='</select>';
+  h+='</div>';
+
+  // Aplicar filtros
+  var fDis=document.getElementById('act-f-dis')?document.getElementById('act-f-dis').value:'';
+  var fEst=document.getElementById('act-f-est')?document.getElementById('act-f-est').value:'';
+  var lista=acts.filter(function(a){
+    if(fDis&&a.disId!==parseInt(fDis))return false;
+    if(fEst==='activa'&&a.etapa==='cerrada')return false;
+    if(fEst==='cerrada'&&a.etapa!=='cerrada')return false;
+    return true;
+  }).sort(function(a,b){return(b.inicio||'').localeCompare(a.inicio||'');});
+
+  if(!lista.length){
+    h+='<div style="padding:32px;text-align:center;color:var(--t3);font-size:13px">No hay actividades de apoyo registradas</div>';
+  } else {
+    h+='<div style="padding:0 16px 16px">';
+    lista.forEach(function(a){
+      var di=dis.find(function(x){return x.id===a.disId;});
+      var cerrada=a.etapa==='cerrada';
+      var borde=cerrada?'var(--line2)':'var(--apoyo)';
+      var cfg=d.jornada||{hLV:8.5};
+      var hUsadas=a.fin?horasHabilesEntre(a.inicio,a.fin,cfg,d.horasExtra||[],a.disId):horasHabilesEntre(a.inicio,ahoraISO(),cfg,d.horasExtra||[],a.disId);
+      var pct=a.horasEst?Math.min(100,Math.round(hUsadas/a.horasEst*100)):0;
+      var barCol=pct>=100?'var(--err)':pct>=75?'var(--warn)':'var(--apoyo2)';
+      h+='<div style="background:var(--bg3);border:1px solid '+borde+';border-left:3px solid '+borde+';border-radius:var(--r2);padding:12px 14px;margin-bottom:10px">';
+      h+='<div style="display:flex;align-items:flex-start;gap:10px">';
+      h+='<div style="flex:1">';
+      h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
+      h+='<span style="font-family:var(--mono);font-size:11px;color:var(--apoyo2);font-weight:700">#'+a.id+'</span>';
+      h+='<span style="font-size:13px;font-weight:700;color:#fff">'+a.desc+'</span>';
+      h+='<span class="badge '+(cerrada?'b-ok':'b-warn')+'" style="margin-left:4px">'+(cerrada?'CERRADA':'EN EJECUCIÓN')+'</span>';
+      h+='</div>';
+      h+='<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px">';
+      h+='<span style="font-size:11px;color:var(--t3)">👤 '+(di?di.nombre:'—')+'</span>';
+      h+='<span style="font-size:11px;color:var(--t3)">📅 '+fmtFecha(a.inicio)+'</span>';
+      if(a.fin) h+='<span style="font-size:11px;color:var(--ok2)">✓ '+fmtFecha(a.fin)+'</span>';
+      h+='<span style="font-size:11px;color:var(--t3)">⏱ '+hUsadas.toFixed(1)+'h / '+(a.horasEst||'?')+'h est.</span>';
+      h+='</div>';
+      // Barra de progreso
+      h+='<div class="bar"><div class="bar-t"><div class="bar-f" style="width:'+pct+'%;background:'+barCol+'"></div></div></div>';
+      if(a.obs) h+='<div style="font-size:11px;color:var(--t3);margin-top:6px;font-style:italic">'+a.obs+'</div>';
+      h+='</div>';
+      // Acciones (solo jefe)
+      if(esJ){
+        h+='<div style="display:flex;flex-direction:column;gap:6px;min-width:90px">';
+        if(!cerrada){
+          h+='<button class="btn btn-sm btn-apoyo" onclick="cerrarActividad('+a.id+')">✓ Cerrar</button>';
+          h+='<button class="btn btn-sm btn-ghost" onclick="editarActividad('+a.id+')">✎ Editar</button>';
+        }
+        h+='<button class="btn btn-sm btn-ghost" onclick="eliminarActividad('+a.id+')" style="color:var(--err2);border-color:var(--err)">✕</button>';
+        h+='</div>';
+      }
+      h+='</div></div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+  document.getElementById('pag').innerHTML=h;
+
+  // Badge en menú
+  var nAct=(d.actividades||[]).filter(function(a){return a.etapa!=='cerrada';}).length;
+  var nbAct=document.getElementById('nb-act');
+  if(nbAct){nbAct.textContent=nAct;nbAct.style.display=nAct?'inline':'none';}
+}
+
+function abrirModalActividad(id){
+  var d=getData();
+  var dis=d.disenadores||[];
+  var sel=document.getElementById('act-dis');
+  sel.innerHTML='<option value="">— Seleccionar —</option>';
+  dis.forEach(function(di){sel.innerHTML+='<option value="'+di.id+'">'+di.nombre+'</option>';});
+  if(id){
+    var a=(d.actividades||[]).find(function(x){return x.id===id;});
+    if(!a)return;
+    document.getElementById('act-edit-id').value=id;
+    document.getElementById('act-desc').value=a.desc||'';
+    document.getElementById('act-dis').value=a.disId||'';
+    document.getElementById('act-inicio').value=(a.inicio||'').slice(0,16);
+    document.getElementById('act-horas-est').value=a.horasEst||8;
+    document.getElementById('act-obs').value=a.obs||'';
+  } else {
+    document.getElementById('act-edit-id').value='';
+    document.getElementById('act-desc').value='';
+    document.getElementById('act-dis').value='';
+    document.getElementById('act-inicio').value=ahoraISO().slice(0,16);
+    document.getElementById('act-horas-est').value=8;
+    document.getElementById('act-obs').value='';
+  }
+  document.getElementById('m-actividad').classList.add('on');
+}
+
+function editarActividad(id){ abrirModalActividad(id); }
+
+function guardarActividad(){
+  var desc=document.getElementById('act-desc').value.trim();
+  var disId=parseInt(document.getElementById('act-dis').value);
+  var inicio=document.getElementById('act-inicio').value||ahoraISO();
+  var horasEst=parseFloat(document.getElementById('act-horas-est').value)||8;
+  var obs=document.getElementById('act-obs').value.trim();
+  if(!desc){alert('Ingrese una descripción');return;}
+  if(!disId){alert('Seleccione un diseñador');return;}
+  var d=getData();
+  if(!d.actividades)d.actividades=[];
+  if(!d.nextActId)d.nextActId=1;
+  var editId=document.getElementById('act-edit-id').value;
+  if(editId){
+    var idx2=d.actividades.findIndex(function(x){return x.id===parseInt(editId);});
+    if(idx2>=0){d.actividades[idx2].desc=desc;d.actividades[idx2].disId=disId;d.actividades[idx2].inicio=inicio;d.actividades[idx2].horasEst=horasEst;d.actividades[idx2].obs=obs;}
+  } else {
+    d.actividades.push({id:d.nextActId++,desc:desc,disId:disId,inicio:inicio,horasEst:horasEst,obs:obs,etapa:'activa',creado:ahoraISO(),creadoPor:QUIEN});
+  }
+  setData(d);cerrarModal();renderActividades();
+}
+
+function cerrarActividad(id){
+  if(!confirm('¿Marcar esta actividad como cerrada?'))return;
+  var d=getData();
+  var idx2=(d.actividades||[]).findIndex(function(x){return x.id===id;});
+  if(idx2<0)return;
+  d.actividades[idx2].etapa='cerrada';
+  d.actividades[idx2].fin=ahoraISO();
+  setData(d);renderActividades();
+}
+
+function eliminarActividad(id){
+  if(!confirm('¿Eliminar esta actividad? Esta acción no se puede deshacer.'))return;
+  var d=getData();
+  d.actividades=(d.actividades||[]).filter(function(x){return x.id!==id;});
+  setData(d);renderActividades();
+}
+
+// ════════════════════════════════════════════════════════
 // DETALLE DÍA — CALENDARIO
 // ════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════
+// BACKUP — EXPORTAR / IMPORTAR
+// ════════════════════════════════════════════════════════
+function exportarBackup(){
+  try{
+    var d=getData();
+    var ahora=new Date();
+    var ts=ahora.getFullYear()+''
+      +String(ahora.getMonth()+1).padStart(2,'0')
+      +String(ahora.getDate()).padStart(2,'0')
+      +'_'+String(ahora.getHours()).padStart(2,'0')
+      +String(ahora.getMinutes()).padStart(2,'0');
+    var payload={
+      version:'GIM_BACKUP_v1',
+      disc:DISC,
+      fecha:ahora.toISOString(),
+      data:d
+    };
+    var blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;
+    a.download='GIM_backup_'+DISC+'_'+ts+'.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    var st=document.getElementById('backup-status');
+    if(st) st.innerHTML='<span style="color:var(--ok2)">✓ Respaldo exportado — '+ts+'</span>';
+  }catch(e){
+    alert('Error al exportar: '+e.message);
+  }
+}
+
+function importarBackup(input){
+  var file=input.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var payload=JSON.parse(e.target.result);
+      if(!payload.version||payload.version!=='GIM_BACKUP_v1'){
+        alert('Archivo no reconocido. Asegúrese de importar un respaldo GIM válido.');
+        return;
+      }
+      if(payload.disc&&payload.disc!==DISC){
+        if(!confirm('Este respaldo es de '+payload.disc+' pero usted está en '+DISC+'. ¿Continuar de todas formas?'))return;
+      }
+      var fechaBackup=new Date(payload.fecha).toLocaleString('es-CO');
+      if(!confirm('Restaurar respaldo: '+fechaBackup+'. Reemplazara TODOS los datos actuales.'))return;
+      setData(payload.data);
+      var st=document.getElementById('backup-status');
+      if(st) st.innerHTML='<span style="color:var(--ok2)">✓ Respaldo restaurado — '+fechaBackup+'</span>';
+      // Refrescar vista
+      setTimeout(function(){go('kanban');},500);
+    }catch(err){
+      alert('Error al leer el archivo: '+err.message);
+    }
+  };
+  reader.readAsText(file);
+  input.value=''; // reset para permitir reimportar mismo archivo
+}
+
+// ════════════════════════════════════════════════════════
+// ENTREGABLE DOCUMENTAL
+// ════════════════════════════════════════════════════════
+var DOC_TIPOS={mem_est:'Memoria cálculo estructural',mem_ter:'Memoria cálculo térmico',man_mto:'Manual de mantenimiento',man_ens:'Manual de ensamble',man_ope:'Manual de operación',man_iza:'Manual de izaje',man_alm:'Manual de almacenamiento',otro:'Otro'};
+var DOC_ETAPAS={pendiente:'Pendiente',elaboracion:'En elaboración',revision_jefe:'Revisión jefe',correcciones:'Correcciones',aprobado:'Aprobado — listo para AP',cerrado:'Cerrado'};
+var DOC_ET_COLOR={pendiente:'var(--t3)',elaboracion:'var(--apoyo2)',revision_jefe:'var(--warn2)',correcciones:'var(--err2)',aprobado:'var(--ok2)',cerrado:'var(--ok)'};
+
+function toggleDocumental(){
+  var chk=document.getElementById('f-doc-activo');
+  var blq=document.getElementById('f-doc-bloque');
+  if(blq) blq.style.display=chk.checked?'block':'none';
+  // Llenar selector diseñadores
+  if(chk.checked){
+    var d=getData(); var dis=d.disenadores||[];
+    var sel=document.getElementById('f-doc-dis');
+    sel.innerHTML='<option value="">— Mismo diseñador de OTM —</option>';
+    dis.forEach(function(di){sel.innerHTML+='<option value="'+di.id+'">'+di.nombre+'</option>';});
+    // Mostrar/ocultar campo otro
+    document.getElementById('f-doc-tipo').addEventListener('change',function(){
+      document.getElementById('f-doc-otro-bloque').style.display=this.value==='otro'?'block':'none';
+    });
+  }
+}
+
+function docLabel(tipoKey,otro){
+  if(tipoKey==='otro') return otro||'Otro';
+  return DOC_TIPOS[tipoKey]||tipoKey;
+}
+
+function cargarDocEnModal(otmId){
+  var d=getData();
+  var o=(d.otms||[]).find(function(x){return x.id===otmId;});
+  if(!o||!o.doc)return;
+  document.getElementById('doc-otm-id').value=otmId;
+  document.getElementById('doc-otm-label').textContent='OTM '+o.otm+' · '+docLabel(o.doc.tipo,o.doc.tipoOtro);
+  var doc=o.doc;
+  var dis=(d.disenadores||[]).find(function(x){return x.id===(doc.disId||o.disId);});
+  var html='<div style="display:flex;gap:16px;flex-wrap:wrap">';
+  html+='<span>Tipo: <strong style="color:var(--apoyo2)">'+docLabel(doc.tipo,doc.tipoOtro)+'</strong></span>';
+  html+='<span>Responsable: <strong style="color:#fff">'+(dis?dis.nombre:'—')+'</strong></span>';
+  html+='<span>Momento: <strong style="color:#fff">'+(doc.momento==='posterior'?'Posterior al diseño':'Paralelo al diseño')+'</strong></span>';
+  html+='<span>Estado: <strong style="color:'+(DOC_ET_COLOR[doc.etapa]||'var(--t)')+'">'+( DOC_ETAPAS[doc.etapa]||doc.etapa)+'</strong></span>';
+  html+='</div>';
+  document.getElementById('doc-info').innerHTML=html;
+  // Opciones de acción según etapa y rol
+  var sel=document.getElementById('doc-accion');
+  sel.innerHTML='';
+  var esJ=ROL==='jefe';
+  if(doc.etapa==='pendiente'||doc.etapa==='correcciones'){
+    sel.innerHTML+='<option value="entregar">Diseñador entrega al jefe</option>';
+  }
+  if(doc.etapa==='revision_jefe'&&esJ){
+    sel.innerHTML+='<option value="aprobar">Jefe aprueba — liberar al AP</option>';
+    sel.innerHTML+='<option value="devolver">Jefe devuelve — requiere correcciones</option>';
+  }
+  if(doc.etapa==='aprobado'&&esJ){
+    sel.innerHTML+='<option value="cerrar">Cerrar entregable</option>';
+  }
+  if(!sel.innerHTML) sel.innerHTML='<option value="">Sin acciones disponibles</option>';
+  document.getElementById('doc-fecha').value='';
+  document.getElementById('doc-obs').value='';
+  actualizarAvisoDocFecha();
+  document.getElementById('m-doc').classList.add('on');
+}
+
+function actualizarAvisoDocFecha(){
+  var val=document.getElementById('doc-fecha').value;
+  var av=document.getElementById('doc-aviso-fecha');
+  if(!av)return;
+  av.innerHTML=val?'<span style="color:var(--ok2)">✓ Fecha registrada</span>':'<span style="color:var(--warn2)">⚠</span> Sin fecha — se tomará el momento actual';
+}
+
+function guardarAccionDoc(){
+  var otmId=parseInt(document.getElementById('doc-otm-id').value);
+  var accion=document.getElementById('doc-accion').value;
+  var fecha=document.getElementById('doc-fecha').value||ahoraISO();
+  var obs=document.getElementById('doc-obs').value.trim();
+  if(!accion||accion==='')return;
+  var d=getData();
+  var idx2=(d.otms||[]).findIndex(function(x){return x.id===otmId;});
+  if(idx2<0)return;
+  var doc=d.otms[idx2].doc;
+  if(!doc.historial)doc.historial=[];
+  var etapaAnt=doc.etapa;
+  if(accion==='entregar') doc.etapa='revision_jefe';
+  else if(accion==='aprobar') doc.etapa='aprobado';
+  else if(accion==='devolver') doc.etapa='correcciones';
+  else if(accion==='cerrar') doc.etapa='cerrado';
+  doc.historial.push({fecha:fecha,accion:accion,etapaAnt:etapaAnt,etapaNueva:doc.etapa,quien:QUIEN,obs:obs});
+  d.otms[idx2].doc=doc;
+  setData(d);cerrarModal();
+  if(typeof renderKanban==='function') renderKanban();
+  if(typeof renderOTMs==='function') renderOTMs();
+}
+
 function cerrarDetalleCal(){var el=document.getElementById('cal-detalle');if(el)el.style.display='none';}
 function abrirDetalleDia(fecha){
   var d=getData();
