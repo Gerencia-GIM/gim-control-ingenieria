@@ -1370,14 +1370,16 @@ function cargarDesdeSheets(callback){
   // Usar script tag para evitar CORS desde file://
   window._sheetsCallback=function(res){
     try{
-      if(res&&res.ok&&res.data){
-        var d=typeof res.data==='string'?JSON.parse(res.data):res.data;
-        if(!d.otms)d.otms=[];
-        if(!d.horasExtra)d.horasExtra=[];
-        if(!d.disenadores)d.disenadores=[];
-        if(!d.nextId)d.nextId=1;
-        if(!d.jornada)d.jornada=Object.assign({},CFG_JORNADA_DEF);
-        localStorage.setItem(SK,JSON.stringify(d));
+      if(res&&res.ok){
+        if(res.data){
+          var d=typeof res.data==='string'?JSON.parse(res.data):res.data;
+          if(!d.otms)d.otms=[];
+          if(!d.horasExtra)d.horasExtra=[];
+          if(!d.disenadores)d.disenadores=[];
+          if(!d.nextId)d.nextId=1;
+          if(!d.jornada)d.jornada=Object.assign({},CFG_JORNADA_DEF);
+          localStorage.setItem(SK,JSON.stringify(d));
+        }
         if(indicador){indicador.textContent='⬤ Sincronizado';indicador.style.color='var(--ok2)';}
         setTimeout(function(){if(indicador){indicador.textContent='⬤ Sheets';indicador.style.color='var(--t3)';}},2000);
       } else {
