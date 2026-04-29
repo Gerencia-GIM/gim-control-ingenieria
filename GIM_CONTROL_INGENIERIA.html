@@ -1343,6 +1343,28 @@ function setData(d){
   // Sincronizar con Google Sheets en segundo plano
   sincronizarSheets(d);
 }
+var _syncFallos=0;
+var _alertaSinConexion=false;
+function alertaConexion(msg){
+  if(_alertaSinConexion)return;
+  _alertaSinConexion=true;
+  var toast=document.createElement('div');
+  toast.id='toast-conexion';
+  toast.style.cssText='position:fixed;bottom:24px;right:24px;z-index:9999;background:#1a0a00;border:1.5px solid var(--err);border-radius:var(--r2);padding:14px 18px;max-width:320px';
+  toast.innerHTML='<div style="display:flex;align-items:flex-start;gap:10px"><span style="color:var(--err2);font-size:16px">⚠</span><div><div style="font-size:13px;font-weight:700;color:var(--err2);margin-bottom:4px">Sin conexión con Sheets</div><div style="font-size:12px;color:var(--t2);line-height:1.5">'+msg+'</div><div style="margin-top:10px;display:flex;gap:8px"><button onclick="reintentar_sync()" style="font-size:11px;padding:5px 12px;background:var(--err);border:none;border-radius:var(--r2);color:#fff;cursor:pointer;font-family:var(--mono)">&#x21BB; Reintentar</button><button onclick="cerrarAlertaConexion()" style="font-size:11px;padding:5px 12px;background:transparent;border:1px solid var(--line2);border-radius:var(--r2);color:var(--t2);cursor:pointer;font-family:var(--mono)">Ignorar</button></div></div></div>';
+  document.body.appendChild(toast);
+}
+function cerrarAlertaConexion(){
+  _alertaSinConexion=false;
+  var t=document.getElementById('toast-conexion');
+  if(t)t.remove();
+}
+function reintentar_sync(){
+  cerrarAlertaConexion();
+  _syncFallos=0;
+  sincronizarSheets();
+  cargarDesdeSheets();
+}
 function sincronizarSheets(d){
   if(SYNC_EN_CURSO)return;
   SYNC_EN_CURSO=true;
@@ -1360,8 +1382,10 @@ function sincronizarSheets(d){
     setTimeout(function(){if(indicador){indicador.textContent='⬤ Sheets';indicador.style.color='var(--t3)';}},2000);
   }).catch(function(){
     SYNC_EN_CURSO=false;
+    _syncFallos++;
     if(indicador){indicador.textContent='⬤ Sin conexión';indicador.style.color='var(--err2)';}
-    setTimeout(function(){if(indicador){indicador.textContent='⬤ Sheets';indicador.style.color='var(--t3)';}},3000);
+    setTimeout(function(){if(indicador){indicador.textContent='⬤ En línea';indicador.style.color='var(--t3)';}},3000);
+    if(_syncFallos>=2) alertaConexion('No se pudo guardar en Google Sheets. Los datos están seguros en el navegador, pero no se están sincronizando.');
   });
 }
 function cargarDesdeSheets(callback){
@@ -1380,6 +1404,7 @@ function cargarDesdeSheets(callback){
           if(!d.jornada)d.jornada=Object.assign({},CFG_JORNADA_DEF);
           localStorage.setItem(SK,JSON.stringify(d));
         }
+        _syncFallos=0;cerrarAlertaConexion();
         if(indicador){indicador.textContent='⬤ Sincronizado';indicador.style.color='var(--ok2)';}
         setTimeout(function(){if(indicador){indicador.textContent='⬤ Sheets';indicador.style.color='var(--t3)';}},2000);
       } else {
@@ -1402,7 +1427,9 @@ function cargarDesdeSheets(callback){
   script.src=GIM_API+'?disc='+DISC+'&callback=_sheetsCallback&t='+Date.now();
   script.onerror=function(){
     window._sheetsCallback=null;
+    _syncFallos++;
     if(indicador){indicador.textContent='⬤ Sin conexión';indicador.style.color='var(--err2)';}
+    if(_syncFallos>=2) alertaConexion('No se pudo conectar con Google Sheets. Verifique su conexión o el estado del script.');
     if(callback)callback();
     this.remove();
   };
