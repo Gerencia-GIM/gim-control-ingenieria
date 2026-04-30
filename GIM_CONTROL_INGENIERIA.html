@@ -2089,8 +2089,11 @@ function renderEquipo(){
   var d=getData();var dis=d.disenadores||[];var otms=d.otms||[];var tb='';
   if(!dis.length)tb='<tr><td colspan="6" class="empty">Sin diseñadores</td></tr>';
   dis.forEach(function(di){
-    var act=otms.filter(function(o){return o.disId===di.id&&o.etapa!=='cerrada';});
-    var cer=otms.filter(function(o){return o.disId===di.id&&o.etapa==='cerrada';});
+    // Incluir OTMs donde es responsable del documental (aunque no sea el diseñador de planos)
+    var actDoc=otms.filter(function(o){return o.doc&&o.doc.disId===di.id&&o.disId!==di.id&&o.etapa!=='cerrada';});
+    var cerDoc=otms.filter(function(o){return o.doc&&o.doc.disId===di.id&&o.disId!==di.id&&o.etapa==='cerrada';});
+    var act=otms.filter(function(o){return o.disId===di.id&&o.etapa!=='cerrada';}).concat(actDoc);
+    var cer=otms.filter(function(o){return o.disId===di.id&&o.etapa==='cerrada';}).concat(cerDoc);
     var revP=cer.length?cer.reduce(function(s,o){return s+(o.revisiones||0);},0)/cer.length:0;
     var devP=cer.length?cer.reduce(function(s,o){var dv=o.horasReal&&o.horasEst?(o.horasReal-o.horasEst)/o.horasEst*100:0;return s+dv;},0)/cer.length:0;
     var pat=di.sabPattern||[];
@@ -3245,12 +3248,22 @@ function calcularFechaLibre(disId, d){
   var otmsActivas=(d.otms||[]).filter(function(o){
     return o.disId===disId&&o.etapa!=='cerrada'&&!o.anulada;
   });
+  // Agregar OTMs donde este diseñador es responsable del documental
+  var otmsDocActivas=(d.otms||[]).filter(function(o){
+    return o.doc&&o.doc.disId===disId&&o.doc.etapa!=='cerrado'&&o.doc.etapa!=='aprobado'&&!o.anulada;
+  });
+  // Combinar sin duplicados
+  otmsDocActivas.forEach(function(o){
+    if(!otmsActivas.find(function(x){return x.id===o.id;})) otmsActivas.push(o);
+  });
   if(!otmsActivas.length) return null; // libre desde hoy
   // Horas pendientes = estimadas - reales acumuladas (incluyendo horas extra)
+  // Para documentales usar horasEst del doc si existe
   var horasPendientes=otmsActivas.reduce(function(sum,o){
-    var est=o.horasEst||0;
-    var real=o.horasReal||0;
-    var hext=(o.horasExtra||[]).reduce(function(s,h){return s+(h.horas||0);},0);
+    var esDocResponsable=o.doc&&o.doc.disId===disId&&o.disId!==disId;
+    var est=esDocResponsable?(o.doc.horasEst||o.horasEst||0):(o.horasEst||0);
+    var real=esDocResponsable?0:(o.horasReal||0);
+    var hext=esDocResponsable?0:(o.horasExtra||[]).reduce(function(s,h){return s+(h.horas||0);},0);
     var pendiente=Math.max(0,est-real-hext);
     return sum+pendiente;
   },0);
@@ -4706,6 +4719,26 @@ function renderHistoricos(){
           +'<td style="padding:7px 12px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;text-align:right;color:var(--t3)">—</td>'
           +'<td style="padding:7px 12px;border-bottom:1px solid var(--line);font-size:11px;color:var(--t3)">'+(he.obs||'—')+'</td>'
         +'</tr>';
+      });
+    }
+
+    // Historial documental
+    if(o.doc&&o.doc.historial&&o.doc.historial.length){
+      html+='<tr><td colspan="7" style="padding:7px 12px;background:var(--apoyo3);color:var(--apoyo2);font-size:10px;font-family:var(--mono);letter-spacing:1px;border-bottom:1px solid var(--line)">◈ ENTREGABLE DOCUMENTAL — '+(DOC_TIPOS[o.doc.tipo]||o.doc.tipoOtro||o.doc.tipo||'').toUpperCase()+'</td></tr>';
+      o.doc.historial.forEach(function(dh,di){
+        var docAcciones={entregar:'Diseñador entrega',aprobar:'Jefe aprueba — liberado al AP',devolver:'Jefe devuelve — correcciones',cerrar:'Cerrado'};
+        var docEtLbl={pendiente:'Pendiente',elaboracion:'En elaboración',revision_jefe:'Revisión jefe',correcciones:'Correcciones',aprobado:'Aprobado',cerrado:'Cerrado'};
+        var acLbl=(docAcciones[dh.accion]||dh.accion)+(dh.quien?' <span style="font-size:10px;color:var(--t3);font-family:var(--mono)">· '+dh.quien+'</span>':'');
+        var bgDoc=dh.accion==='devolver'?'background:rgba(234,179,8,.08)':dh.accion==='aprobar'?'background:rgba(22,163,74,.06)':'background:rgba(14,122,122,.05)';
+        html+='<tr style="'+bgDoc+'">'
+          +'<td style="padding:7px 12px;border-bottom:1px solid var(--line);color:var(--apoyo2);font-family:var(--mono);font-size:11px">D'+(di+1)+'</td>'
+          +'<td style="padding:7px 12px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--apoyo2);white-space:nowrap">'+fmtFecha(dh.fecha)+'</td>'
+          +'<td style="padding:7px 12px;border-bottom:1px solid var(--line);font-size:11px;color:var(--apoyo2)">'+(docEtLbl[dh.etapaNueva]||dh.etapaNueva||'—')+'</td>'
+          +'<td style="padding:7px 12px;border-bottom:1px solid var(--line);font-size:11px">'+acLbl+'</td>'
+          +'<td style="padding:7px 12px;border-bottom:1px solid var(--line);font-size:11px;color:var(--t3)">—</td>'
+          +'<td style="padding:7px 12px;border-bottom:1px solid var(--line);font-size:11px;color:var(--t3)">—</td>'
+          +'<td style="padding:7px 12px;border-bottom:1px solid var(--line);font-size:11px;color:var(--t2);max-width:220px">'+(dh.obs||'—')+'</td>'
+          +'</tr>';
       });
     }
 
