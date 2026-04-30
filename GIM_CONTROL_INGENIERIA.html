@@ -818,6 +818,30 @@ select option{background:#0d1e3d;color:var(--t)}
     <div class="fg"><label>Entregable</label>
       <select id="f-tipo-entregable" onchange="onEntregableChange()" style="min-height:42px"></select>
     </div>
+    <!-- TIPO DOCUMENTO — visible solo con Entregable documental -->
+    <div id="f-doc-seccion" style="display:none">
+      <input type="hidden" id="f-doc-activo" value="1">
+      <div class="fr2">
+        <div class="fg">
+          <label style="color:var(--apoyo2)">◈ Tipo de documento</label>
+          <select id="f-doc-tipo" onchange="onDocTipoChange()">
+            <option value="">— Seleccionar —</option>
+            <option value="mem_est">Memoria de cálculo estructural</option>
+            <option value="mem_ter">Memoria de cálculo térmico</option>
+            <option value="man_mto">Manual de mantenimiento</option>
+            <option value="man_ens">Manual de ensamble</option>
+            <option value="man_ope">Manual de operación</option>
+            <option value="man_iza">Manual de izaje</option>
+            <option value="man_alm">Manual de almacenamiento</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div class="fg" id="f-doc-otro-bloque" style="display:none">
+          <label>Especificar tipo</label>
+          <input type="text" id="f-doc-otro" placeholder="Ej: Informe técnico, Protocolo...">
+        </div>
+      </div>
+    </div>
     <div class="fr3">
       <div class="fg"><label>Fase de inicio</label><select id="f-fase"><option value="1">Fase 1 — Planos aprobación</option><option value="2">Fase 2 — Planos fabricación</option></select></div>
       <div class="fg"><label>Horas estimadas</label><input id="f-horas" type="number" placeholder="40" min="1"><div class="fg-hint">Criterio del jefe — construye el historial</div></div>
@@ -829,43 +853,6 @@ select option{background:#0d1e3d;color:var(--t)}
     </div>
     <div class="fg"><label>Observaciones técnicas de entrada</label><textarea id="f-obs" placeholder="Información técnica, aclaraciones, referencias de oferta..."></textarea></div>
     <!-- ENTREGABLE DOCUMENTAL -->
-    <div id="f-doc-seccion" style="border-top:1px solid var(--line2);margin-top:16px;padding-top:14px;display:none">
-      <div style="font-size:12px;font-weight:700;color:var(--apoyo2);margin-bottom:12px;display:flex;align-items:center;gap:6px"><span>◈</span> Entregable documental</div>
-      <input type="hidden" id="f-doc-activo" value="1">
-      <div id="f-doc-bloque" style="background:var(--apoyo3);border:1px solid var(--apoyo);border-radius:var(--r2);padding:14px">
-        <div class="fr2">
-          <div class="fg">
-            <label>Tipo de documento</label>
-            <select id="f-doc-tipo">
-              <option value="">— Seleccionar —</option>
-              <option value="mem_est">Memoria de cálculo estructural</option>
-              <option value="mem_ter">Memoria de cálculo térmico</option>
-              <option value="man_mto">Manual de mantenimiento</option>
-              <option value="man_ens">Manual de ensamble</option>
-              <option value="man_ope">Manual de operación</option>
-              <option value="man_iza">Manual de izaje</option>
-              <option value="man_alm">Manual de almacenamiento</option>
-              <option value="otro">Otro (especificar)</option>
-            </select>
-          </div>
-          <div class="fg" id="f-doc-otro-bloque" style="display:none">
-            <label>Especificar tipo</label>
-            <input type="text" id="f-doc-otro" placeholder="Ej: Informe técnico, Protocolo...">
-          </div>
-        </div>
-        <div class="fr2">
-          <div class="fg">
-            <label>Responsable del documento</label>
-            <select id="f-doc-dis"></select>
-          </div>
-
-        </div>
-        <div class="fg">
-          <label>Observación (opcional)</label>
-          <input type="text" id="f-doc-obs" placeholder="Alcance, cliente, referencia...">
-        </div>
-      </div>
-    </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button><button class="btn btn-acc" onclick="guardarOTM()">Registrar OTM/OTE</button></div>
   </div>
 </div>
@@ -2730,6 +2717,26 @@ function onEntregableChange(){
   if(faseRow) faseRow.style.display=esDoc?'none':'flex';
   if(compRow) compRow.style.display=esDoc?'none':'flex';
   if(esDoc&&seccion) seccion.scrollIntoView({behavior:'smooth',block:'nearest'});
+  if(esDoc){
+    var faseEl=document.getElementById('f-fase');
+    if(faseEl){
+      faseEl.value='1';
+      faseEl.style.borderColor='var(--apoyo)';
+      // Deshabilitar Fase 2
+      Array.from(faseEl.options).forEach(function(op){
+        if(op.value==='2'){op.disabled=true;op.text='Fase 2 — No aplica para documentales';}
+      });
+    }
+  } else {
+    // Restaurar Fase 2 al cambiar a otro entregable
+    var faseEl2=document.getElementById('f-fase');
+    if(faseEl2){
+      faseEl2.style.borderColor='';
+      Array.from(faseEl2.options).forEach(function(op){
+        if(op.value==='2'){op.disabled=false;op.text='Fase 2 — Planos fabricación';}
+      });
+    }
+  }
   var chk=document.getElementById('f-doc-activo');
   var blq=document.getElementById('f-doc-bloque');
   if(chk&&blq){
@@ -2743,14 +2750,7 @@ function onEntregableChange(){
         sel2.innerHTML='<option value="">— Mismo diseñador de OTM —</option>';
         (d.disenadores||[]).forEach(function(di){sel2.innerHTML+='<option value="'+di.id+'">'+di.nombre+'</option>';});
       }
-      // Escuchar cambio en tipo doc para mostrar/ocultar "otro"
-      var selTipoDoc=document.getElementById('f-doc-tipo');
-      if(selTipoDoc&&!selTipoDoc._listenerOk){
-        selTipoDoc.addEventListener('change',function(){
-          document.getElementById('f-doc-otro-bloque').style.display=this.value==='otro'?'block':'none';
-        });
-        selTipoDoc._listenerOk=true;
-      }
+
     }
   }
 }
@@ -3626,6 +3626,11 @@ var DOC_TIPOS={mem_est:'Memoria cálculo estructural',mem_ter:'Memoria cálculo 
 var DOC_ETAPAS={pendiente:'Pendiente',elaboracion:'En elaboración',revision_jefe:'Revisión jefe',correcciones:'Correcciones',aprobado:'Aprobado — listo para AP',cerrado:'Cerrado'};
 var DOC_ET_COLOR={pendiente:'var(--t3)',elaboracion:'var(--apoyo2)',revision_jefe:'var(--warn2)',correcciones:'var(--err2)',aprobado:'var(--ok2)',cerrado:'var(--ok)'};
 
+function onDocTipoChange(){
+  var v=document.getElementById('f-doc-tipo').value;
+  var blq=document.getElementById('f-doc-otro-bloque');
+  if(blq) blq.style.display=v==='otro'?'block':'none';
+}
 function toggleDocumental(){
   var chk=document.getElementById('f-doc-activo');
   var blq=document.getElementById('f-doc-bloque');
