@@ -250,6 +250,8 @@ tbody tr:last-child td{border-bottom:none}
 .kc-warn::before{background:var(--warn);animation:pw 2s infinite}
 .kc-err::before{background:var(--err);animation:pe 1.5s infinite}
 .kc-tm::before{background:var(--purple)}
+.kc-doc::before{background:var(--apoyo)}
+.kc-doc{background:rgba(14,122,122,.04)}
 .kc-standby::before{background:var(--warn);animation:standby-pulse 1s infinite}
 .kc-standby{
   border-color:rgba(255,109,0,.4)!important;
@@ -821,7 +823,7 @@ select option{background:#0d1e3d;color:var(--t)}
       <div class="fg"><label>Horas estimadas</label><input id="f-horas" type="number" placeholder="40" min="1"><div class="fg-hint">Criterio del jefe — construye el historial</div></div>
       <div class="fg"><label>Fecha/hora asignación</label><input type="datetime-local" id="f-inicio"></div>
     </div>
-    <div class="fr2">
+    <div class="fr2" id="f-comp-row">
       <div class="fg"><label>F. Compromiso Revisor</label><input type="date" id="f-frev"></div>
       <div class="fg"><label>F. Compromiso Producción</label><input type="date" id="f-fprod"></div>
     </div>
@@ -1868,13 +1870,14 @@ function renderKanban(){
       var s=semaforo(o,d);var dias=diasEnEtapaActual(o,d);var tm2=(d.tiempos||TIEMPOS_DEF)[et.id]||0;
       // Stand-by = cualquier etapa donde nadie está trabajando activamente
       var esStandBy=['sin_asignar','asignada','jefe_rev','ap_cliente','ap_aprobado','modif_cli','fab_jefe','fab_esp_ap'].indexOf(o.etapa)>=0;
-      var cc=o.tmActivo?'kc-tm':s==='err'?'kc-err':s==='warn'?'kc-warn':esStandBy?'kc-standby':'kc-ok';
+      var esDocPuro=o.tipoEntregable==='Entregable documental';
+      var cc=o.tmActivo?'kc-tm':s==='err'?'kc-err':s==='warn'?'kc-warn':esStandBy?'kc-standby':esDocPuro?'kc-doc':'kc-ok';
       var dc=s==='err'?'var(--err2)':s==='warn'?'var(--warn2)':s==='tm'?'var(--purple2)':'var(--ok2)';
       var pr=o.prioridad||2;
       var prodDisplay=o.producto?(o.producto.replace(/__/g,' · ').replace(/_/g,' ')).toUpperCase():'';
       var tieneEP=(o.entregasParciales||[]).length>0;
       var epBadge=tieneEP?'<span style="background:var(--purple3);color:var(--purple2);border:1px solid var(--purple);border-radius:3px;font-size:9px;font-family:var(--mono);padding:1px 5px;font-weight:700">EP '+o.entregasParciales.length+'</span>':'';
-      html+='<div class="kan-card '+cc+'"><div class="kc-pi"><span>'+(o.docTipo||'OTM')+' PI '+o.pi+'</span>'+epBadge+'</div><div style="font-size:9px;color:var(--t3);font-family:var(--mono);margin-bottom:2px">'+prodDisplay+'</div><div class="kc-otm" onclick="abrirEtapa('+o.id+')" style="cursor:pointer">'+o.otm+'</div><div class="kc-dis">'+(di?di.nombre:'—')+'</div><div class="kc-footer"><span class="kc-dias" style="color:'+dc+'">'+dias.toFixed(1)+'d'+(tm2>0?'/'+tm2+'d':'')+'</span><span style="font-size:10px;color:var(--t3)">'+o.tipo.split(' ').slice(0,2).join(' ')+'</span></div>'+(o.tmActivo?'<div class="kc-tm-banner">⏸ '+o.tmCausa+'</div>':'')+(o.revisiones>0?'<div style="font-size:9px;color:var(--warn2);margin-top:3px;font-family:var(--mono)">'+o.revisiones+' revisión(es)</div>':'')+(o.doc?'<div style="font-size:9px;color:var(--apoyo2);margin-top:3px;font-family:var(--mono);cursor:pointer" onclick="event.stopPropagation();cargarDocEnModal('+o.id+')">◈ Doc: '+(DOC_ETAPAS[o.doc.etapa]||o.doc.etapa)+'</div>':'')+'<div style="display:flex;gap:4px;margin-top:6px"><button class="btn btn-ghost btn-sm" style="flex:1;font-size:10px" onclick="abrirEtapa('+o.id+')">→ Gestionar</button><button class="btn btn-warn btn-sm" style="font-size:10px;padding:4px 8px" onclick="editarOTM('+o.id+')" title="Editar datos">✎</button><button class="btn btn-err btn-sm" style="font-size:10px;padding:4px 8px" onclick="eliminarOTM('+o.id+')" title="Eliminar">✕</button></div></div>';
+      html+='<div class="kan-card '+cc+'"><div class="kc-pi"><span>'+(o.docTipo||'OTM')+' PI '+o.pi+'</span>'+epBadge+'</div><div style="font-size:9px;color:var(--t3);font-family:var(--mono);margin-bottom:2px">'+prodDisplay+'</div><div class="kc-otm" onclick="abrirEtapa('+o.id+')" style="cursor:pointer">'+o.otm+'</div><div class="kc-dis">'+(di?di.nombre:'—')+'</div><div class="kc-footer"><span class="kc-dias" style="color:'+dc+'">'+dias.toFixed(1)+'d'+(tm2>0?'/'+tm2+'d':'')+'</span><span style="font-size:10px;color:var(--t3)">'+o.tipo.split(' ').slice(0,2).join(' ')+'</span></div>'+(o.tmActivo?'<div class="kc-tm-banner">⏸ '+o.tmCausa+'</div>':'')+(o.revisiones>0?'<div style="font-size:9px;color:var(--warn2);margin-top:3px;font-family:var(--mono)">'+o.revisiones+' revisión(es)</div>':'')+(o.doc?'<div style="font-size:9px;color:var(--apoyo2);margin-top:3px;font-family:var(--mono);cursor:pointer" onclick="event.stopPropagation();cargarDocEnModal('+o.id+')">◈ '+(DOC_TIPOS[o.doc.tipo]||o.doc.tipo)+' · '+(DOC_ETAPAS[o.doc.etapa]||o.doc.etapa)+'</div>':'')+'<div style="display:flex;gap:4px;margin-top:6px"><button class="btn btn-ghost btn-sm" style="flex:1;font-size:10px" onclick="abrirEtapa('+o.id+')">→ Gestionar</button><button class="btn btn-warn btn-sm" style="font-size:10px;padding:4px 8px" onclick="editarOTM('+o.id+')" title="Editar datos">✎</button><button class="btn btn-err btn-sm" style="font-size:10px;padding:4px 8px" onclick="eliminarOTM('+o.id+')" title="Eliminar">✕</button></div></div>';
     });
     html+='</div></div>';
   });
@@ -2631,6 +2634,9 @@ function resetSelector(){
   ['f-linea-row','f-serie-row','f-producto-row','f-contenido-row','f-otro-row','f-doc-seccion'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display='none';
   });
+  // Restaurar fase y compromisos
+  var fr=document.getElementById('f-fase-row');if(fr)fr.style.display='flex';
+  var cr=document.getElementById('f-comp-row');if(cr)cr.style.display='flex';
   document.getElementById('f-sin-serie-row').style.display='block';
   document.getElementById('f-sin-serie').value='__con_serie__';
   document.getElementById('f-linea').value='';
@@ -2718,6 +2724,11 @@ function onEntregableChange(){
   var esDoc=(tipo==='Entregable documental');
   var seccion=document.getElementById('f-doc-seccion');
   if(seccion) seccion.style.display=esDoc?'block':'none';
+  // Ocultar fase/horas y fechas compromiso para documental
+  var faseRow=document.getElementById('f-fase-row');
+  var compRow=document.getElementById('f-comp-row');
+  if(faseRow) faseRow.style.display=esDoc?'none':'flex';
+  if(compRow) compRow.style.display=esDoc?'none':'flex';
   if(esDoc&&seccion) seccion.scrollIntoView({behavior:'smooth',block:'nearest'});
   var chk=document.getElementById('f-doc-activo');
   var blq=document.getElementById('f-doc-bloque');
