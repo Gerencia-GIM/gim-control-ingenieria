@@ -1379,7 +1379,7 @@ function sincronizarSheets(d){
   }).then(function(){
     SYNC_EN_CURSO=false;
     if(indicador){indicador.textContent='⬤ Guardado';indicador.style.color='var(--ok2)';}
-    setTimeout(function(){if(indicador){indicador.textContent='⬤ Sheets';indicador.style.color='var(--t3)';}},2000);
+    setTimeout(function(){if(indicador){indicador.textContent='⬤ En línea';indicador.style.color='var(--t3)';}},2000);
   }).catch(function(){
     SYNC_EN_CURSO=false;
     _syncFallos++;
@@ -1406,9 +1406,9 @@ function cargarDesdeSheets(callback){
         }
         _syncFallos=0;cerrarAlertaConexion();
         if(indicador){indicador.textContent='⬤ Sincronizado';indicador.style.color='var(--ok2)';}
-        setTimeout(function(){if(indicador){indicador.textContent='⬤ Sheets';indicador.style.color='var(--t3)';}},2000);
+        setTimeout(function(){if(indicador){indicador.textContent='⬤ En línea';indicador.style.color='var(--t3)';}},2000);
       } else {
-        if(indicador){indicador.textContent='⬤ Sheets';indicador.style.color='var(--t3)';}
+        if(indicador){indicador.textContent='⬤ En línea';indicador.style.color='var(--t3)';}
       }
     } catch(e){
       if(indicador){indicador.textContent='⬤ Error';indicador.style.color='var(--err2)';}
@@ -1437,7 +1437,7 @@ function cargarDesdeSheets(callback){
   // Timeout de seguridad — si no responde en 5s, continúa con datos locales
   setTimeout(function(){
     if(window._sheetsCallback){
-      if(indicador){indicador.textContent='⬤ Sheets';indicador.style.color='var(--t3)';}
+      if(indicador){indicador.textContent='⬤ En línea';indicador.style.color='var(--t3)';}
       if(callback)callback();
       window._sheetsCallback=null;
       var old=document.getElementById('sheets-loader');
@@ -2393,8 +2393,8 @@ function guardarOTM(){
   var esConSerie=ssVal==='__con_serie__';
   if(esConSerie){
     if(!linVal){alert('Seleccione la línea (BT o MT)');return;}
-    if(!serVal){alert('Seleccione la serie');return;}
-    if(!pvVal){alert('Seleccione el tipo de producto');return;}
+    var soloDoc=(document.getElementById('f-doc-activo')&&document.getElementById('f-doc-activo').checked&&(!ssVal||ssVal===''));
+  if(!soloDoc){if(!serVal){alert('Seleccione la serie');return;}if(!pvVal){alert('Seleccione el tipo de producto');return;}}
   }
   var esOtro=(ssVal==='otro_sin_serie'||pvVal==='otro');
   if(esOtro&&!getOtroEspecificado()){alert('Especifique el nombre del producto');return;}
