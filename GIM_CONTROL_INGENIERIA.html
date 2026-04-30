@@ -827,14 +827,10 @@ select option{background:#0d1e3d;color:var(--t)}
     </div>
     <div class="fg"><label>Observaciones técnicas de entrada</label><textarea id="f-obs" placeholder="Información técnica, aclaraciones, referencias de oferta..."></textarea></div>
     <!-- ENTREGABLE DOCUMENTAL -->
-    <div style="border-top:1px solid var(--line2);margin-top:16px;padding-top:14px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:700;color:var(--apoyo2)">
-          <input type="checkbox" id="f-doc-activo" onchange="toggleDocumental()" style="width:16px;height:16px;accent-color:var(--apoyo)">
-          ◈ Esta OTM incluye entregable documental
-        </label>
-      </div>
-      <div id="f-doc-bloque" style="display:none;background:var(--apoyo3);border:1px solid var(--apoyo);border-radius:var(--r2);padding:14px">
+    <div id="f-doc-seccion" style="border-top:1px solid var(--line2);margin-top:16px;padding-top:14px;display:none">
+      <div style="font-size:12px;font-weight:700;color:var(--apoyo2);margin-bottom:12px;display:flex;align-items:center;gap:6px"><span>◈</span> Entregable documental</div>
+      <input type="hidden" id="f-doc-activo" value="1">
+      <div id="f-doc-bloque" style="background:var(--apoyo3);border:1px solid var(--apoyo);border-radius:var(--r2);padding:14px">
         <div class="fr2">
           <div class="fg">
             <label>Tipo de documento</label>
@@ -860,13 +856,7 @@ select option{background:#0d1e3d;color:var(--t)}
             <label>Responsable del documento</label>
             <select id="f-doc-dis"></select>
           </div>
-          <div class="fg">
-            <label>¿Cuándo se elabora?</label>
-            <select id="f-doc-momento">
-              <option value="paralelo">En paralelo al diseño</option>
-              <option value="posterior">Después del diseño</option>
-            </select>
-          </div>
+
         </div>
         <div class="fg">
           <label>Observación (opcional)</label>
@@ -2445,6 +2435,8 @@ function guardarOTM(){
   // Reset documental
   var docChk=document.getElementById('f-doc-activo');
   if(docChk){docChk.checked=false;document.getElementById('f-doc-bloque').style.display='none';}
+  var docSec=document.getElementById('f-doc-seccion');
+  if(docSec) docSec.style.display='none';
   } else {
     d.otms.push(nueva);d.nextId++;
   }
@@ -2617,6 +2609,7 @@ var ENTREGABLES_OTM = [
   'Ingeniería detallada',
   'DXF punzonado / corte laser',
   'LMM — Listado Materiales Mecánicos',
+  'Entregable documental',
 ];
 var ENTREGABLES_OTE = [
   'Planos aprobación',
@@ -2624,6 +2617,7 @@ var ENTREGABLES_OTE = [
   'Diagrama unifilar',
   'LME — Listado Materiales Eléctricos',
   'Listado de marquillas',
+  'Entregable documental',
 ];
 
 function actualizarEntregables(){
@@ -2634,7 +2628,7 @@ function actualizarEntregables(){
 }
 function onDocType(){ actualizarEntregables(); resetSelector(); }
 function resetSelector(){
-  ['f-linea-row','f-serie-row','f-producto-row','f-contenido-row','f-otro-row'].forEach(function(id){
+  ['f-linea-row','f-serie-row','f-producto-row','f-contenido-row','f-otro-row','f-doc-seccion'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display='none';
   });
   document.getElementById('f-sin-serie-row').style.display='block';
@@ -2720,6 +2714,34 @@ function onEntregableChange(){
   if(f2.indexOf(tipo)>=0){sel.value='2';sel.style.borderColor='var(--elec)';}
   else if(f1.indexOf(tipo)>=0){sel.value='1';sel.style.borderColor='var(--acc)';}
   else{sel.style.borderColor='var(--line2)';}
+  // Si selecciona Entregable documental → abrir bloque automáticamente
+  var esDoc=(tipo==='Entregable documental');
+  var seccion=document.getElementById('f-doc-seccion');
+  if(seccion) seccion.style.display=esDoc?'block':'none';
+  if(esDoc&&seccion) seccion.scrollIntoView({behavior:'smooth',block:'nearest'});
+  var chk=document.getElementById('f-doc-activo');
+  var blq=document.getElementById('f-doc-bloque');
+  if(chk&&blq){
+    chk.checked=esDoc;
+    blq.style.display=esDoc?'block':'none';
+    if(esDoc){
+      // Llenar selector diseñadores si no está lleno
+      var sel2=document.getElementById('f-doc-dis');
+      if(sel2&&sel2.options.length<=1){
+        var d=getData();
+        sel2.innerHTML='<option value="">— Mismo diseñador de OTM —</option>';
+        (d.disenadores||[]).forEach(function(di){sel2.innerHTML+='<option value="'+di.id+'">'+di.nombre+'</option>';});
+      }
+      // Escuchar cambio en tipo doc para mostrar/ocultar "otro"
+      var selTipoDoc=document.getElementById('f-doc-tipo');
+      if(selTipoDoc&&!selTipoDoc._listenerOk){
+        selTipoDoc.addEventListener('change',function(){
+          document.getElementById('f-doc-otro-bloque').style.display=this.value==='otro'?'block':'none';
+        });
+        selTipoDoc._listenerOk=true;
+      }
+    }
+  }
 }
 function getProdFinal(){
   var ss=document.getElementById('f-sin-serie')?document.getElementById('f-sin-serie').value:'';
@@ -3601,7 +3623,7 @@ function toggleDocumental(){
   if(chk.checked){
     var d=getData(); var dis=d.disenadores||[];
     var sel=document.getElementById('f-doc-dis');
-    sel.innerHTML='<option value="">— Mismo diseñador de OTM —</option>';
+    sel.innerHTML='<option value="">— Seleccionar responsable —</option>';
     dis.forEach(function(di){sel.innerHTML+='<option value="'+di.id+'">'+di.nombre+'</option>';});
     // Mostrar/ocultar campo otro
     document.getElementById('f-doc-tipo').addEventListener('change',function(){
