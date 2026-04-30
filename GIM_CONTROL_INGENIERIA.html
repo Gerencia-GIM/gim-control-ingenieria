@@ -2411,7 +2411,7 @@ function guardarOTM(){
       if(!chk||!chk.checked)return null;
       var tp=document.getElementById('f-doc-tipo').value;
       var ddis=document.getElementById('f-doc-dis').value;
-      return {tipo:tp,tipoOtro:tp==='otro'?(document.getElementById('f-doc-otro').value.trim()||''):'',disId:ddis?parseInt(ddis):0,momento:document.getElementById('f-doc-momento').value,obs:document.getElementById('f-doc-obs').value.trim(),etapa:'pendiente',historial:[]};
+      return {tipo:tp,tipoOtro:tp==='otro'?(document.getElementById('f-doc-otro').value.trim()||''):'',disId:ddis?parseInt(ddis):0,obs:document.getElementById('f-doc-obs').value.trim(),etapa:'pendiente',historial:[]};
     })(),
     etapa:etapaInicial,etapaFecha:inicio,
     historial:[{etapa:etapaInicial,fecha:inicio,obs:(docTipo)+' registrada',activo:false}],
