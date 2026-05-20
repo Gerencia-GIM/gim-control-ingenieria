@@ -3278,10 +3278,10 @@ function calcularFechaLibre(disId, d){
     if(dw>=1&&dw<=5) hDia=cfg.hLV||8.5;
     else if(dw===6){
       // Verificar sábados por diseñador
-      var diCal=dis.find(function(x){return x.id===di.id;});
-      var esSabDi=diCal&&diCal.sabPattern&&diCal.sabPattern.length?
-        diTrabajaSabado(diCal,fechaCal):esSH(cursor,cfg);
-      if(esSabDi) hDia=cfg.hSab||4;
+      var diObj=(d.disenadores||[]).find(function(x){return x.id===disId;});
+      var esSabDi=diObj&&diObj.sabPattern&&diObj.sabPattern.length?
+        diTrabajaSabado(diObj,ds):esSH(cursor,cfg);
+      if(esSabDi) hDia=diObj&&diObj.hSab?diObj.hSab:(cfg.hSab||4);
     }
     // Sumar horas extra de ese día para este diseñador
     (d.horasExtra||[]).filter(function(h){return h.disId===disId&&h.fecha===ds;})
